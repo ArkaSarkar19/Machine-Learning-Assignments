@@ -78,6 +78,16 @@ class MyPreProcessor():
 
 
         return X, y
+    def get_analytical_sol(self,dataset = 0):
+        X,y = self.pre_process(dataset)
+        bias = np.zeros((X.shape[0],1))
+        bias.fill(1)
+        X = np.append(X,bias, axis = 1)
+        print(X)
+        W = np.dot(np.linalg.inv(np.dot(X.T,X)), np.dot(X.T,y))
+        return W
+
+
 
 
 class MyLinearRegression():
@@ -105,7 +115,8 @@ class MyLinearRegression():
         m,n = X.shape           #number of training examples, and features
         W = np.zeros((n,1))     #weights
         b = 0                   #bias
-
+        self.W = W
+        self.b = b
         y = y.reshape((m,1))
         rmse_train_history = []
         mae_train_history = []
@@ -129,8 +140,8 @@ class MyLinearRegression():
                 db = (-1/m)*(np.sum(error)/(np.sum(((1/m)*(error)**2))**0.5))
             else:
                 epsilon = 10**-7
-                dW = (-1/m)*(np.sum(np.dot(X.T,abs(error)/error), axis = 1))
-                db = (-1/m)*(np.sum(abs(error)/error))
+                dW = (-1/m)*(np.sum(np.dot(X.T,abs(error)/(error+ epsilon) ), axis = 1))
+                db = (-1/m)*(np.sum(abs(error)/(error+ epsilon)))
 
             dW = dW.reshape((n,1))
 
@@ -159,6 +170,7 @@ class MyLinearRegression():
             else:
                 if(_%500 ==0):
                     print("Training loss after ", _, " iterations is ", rmse) 
+
             W = W - learning_rate*dW
             b = b - learning_rate*db
 
@@ -226,7 +238,7 @@ class MyLogisticRegression():
     def __init__(self):
         pass
 
-    def fit(self, X, y, X_test = None, y_test = None, epochs = 5000,learning_rate = 0.005):
+    def fit(self, X, y, X_test = None, y_test = None, epochs = 5000,learning_rate = 0.005, grad_type = "bgd"):
         """
         Fitting (training) the logistic model.
 
@@ -240,58 +252,124 @@ class MyLogisticRegression():
         -------
         self : an instance of self
         """
-        m,n = X.shape           #number of training examples, and features
-        W = np.zeros((n,1))     #weights
-        b = 0                   #bias
-        self.W = W
-        self.b = b;
-        y = y.reshape((m,1))
 
-        loss_history = []
-        val_loss_history = []
-        train_acc_history = []
-        val_acc_history = []
-        for _ in range(epochs):
+        if(grad_type == "bgd"):
+            m,n = X.shape           #number of training examples, and features
+            W = np.zeros((n,1))     #weights
+            b = 0                   #bias
+            self.W = W
+            self.b = b;
+            y = y.reshape((m,1))
 
-            #forward propagation
-            Z = np.dot(X,W)  + b
-            A = self.sigmoid(Z)
-            y_train_pred = self.predict(X)
-            train_acc = self.accuracy(y,y_train_pred)
-            loss = self.cross_entropy_loss(y,A)
-            loss_history.append(loss)
-            train_acc_history.append(train_acc)
+            loss_history = []
+            val_loss_history = []
+            train_acc_history = []
+            val_acc_history = []
+            for _ in range(epochs):
 
-            #backward propagation and calculation of gradients
-            dW = np.dot(X.T,(A-y))/m
-            db = np.sum(A-y)/m
-            dW = dW.reshape((n,1))
+                #forward propagation
+                Z = np.dot(X,W)  + b
+                A = self.sigmoid(Z)
+                y_train_pred = self.predict(X)
+                train_acc = self.accuracy(y,y_train_pred)
+                loss = self.cross_entropy_loss(y,A)
+                loss_history.append(loss)
+                train_acc_history.append(train_acc)
 
-            # print(dW.shape)
-            # print(db.shape)
+                #backward propagation and calculation of gradients
+                dW = np.dot(X.T,(A-y))/m
+                db = np.sum(A-y)/m
+                dW = dW.reshape((n,1))
 
-            if(X_test is not None):
-                A_pred = self.sigmoid(np.dot(X_test, W) + b)
-                y_val_pred = self.predict(X_test)
-                val_acc = self.accuracy(y_test,y_val_pred)
-                val_loss = self.cross_entropy_loss(y_test,A_pred)
-                val_loss_history.append(val_loss)
-                val_acc_history.append(val_acc)
+                # print(dW.shape)
+                # print(db.shape)
 
-                if(_%500 ==0):
-                    # print(y_pred.shape)
-                    # print(W.shape)
-                    print("Training loss after ", _, " iterations is : ", loss, " | validation loss is : ", val_loss)
-                    print("Training accuracy after ", _, " iterations is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
-            else:
-                if(_%500 ==0):
-                    print("Training loss after ", _, " iterations is ", loss) 
-                    print("Training accuracy after ", _, " iterations is : ", train_acc*100,"%" )
-            W = W - learning_rate*dW
-            b = b - learning_rate*db
+                if(X_test is not None):
+                    A_pred = self.sigmoid(np.dot(X_test, W) + b)
+                    y_val_pred = self.predict(X_test)
+                    val_acc = self.accuracy(y_test,y_val_pred)
+                    val_loss = self.cross_entropy_loss(y_test,A_pred)
+                    val_loss_history.append(val_loss)
+                    val_acc_history.append(val_acc)
 
+                    if(_%500 ==0):
+                        # print(y_pred.shape)
+                        # print(W.shape)
+                        print("\nTraining loss after ", _, " iterations is : ", loss, " | validation loss is : ", val_loss)
+                        print("Training accuracy after ", _, " iterations is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
+                else:
+                    if(_%500 ==0):
+                        print("\nTraining loss after ", _, " iterations is ", loss) 
+                        print("Training accuracy after ", _, " iterations is : ", train_acc*100,"%" )
+                W = W - learning_rate*dW
+                b = b - learning_rate*db
+
+                self.W = W
+                self.b = b
+
+            self.loss_history = loss_history
+            self.val_loss_history = val_loss_history
+            self.train_acc_history = train_acc_history
+            self.val_acc_history = val_acc_history
             self.W = W
             self.b = b
+
+        else:
+
+            m,n = X.shape           #number of training examples, and features
+            W = np.zeros((n,1))     #weights
+            b = 0                   #bias
+            self.W = W
+            self.b = b;
+            y = y.reshape((m,1))
+
+            loss_history = []
+            val_loss_history = []
+            train_acc_history = []
+            val_acc_history = []
+            for _ in range(epochs+1):
+
+                for i in range(m):
+                    #forward propagation
+                    x_i = X[i]
+                    y_i = y[i]
+                    z = np.dot(x_i,W)  + b
+                    a = self.sigmoid(z)
+                    loss = self.sgd_loss(y_i,a)
+
+                    #backward propagation and calculation of gradients
+                    dW = x_i*(a-y_i)
+                    db = a-y_i
+                    dW = dW.reshape((n,1))
+                    W = W - learning_rate*dW
+                    b = b - learning_rate*db
+
+                    self.W = W
+                    self.b = b
+                    # print(dW.shape)
+                    # print(db.shape)
+
+                y_train_pred = self.predict(X)
+                train_acc = self.accuracy(y,y_train_pred)
+                train_acc_history.append(train_acc)
+                loss_history.append(loss)
+                if(X_test is not None):
+                    A_pred = self.sigmoid(np.dot(X_test, W) + b)
+                    y_val_pred = self.predict(X_test)
+                    val_acc = self.accuracy(y_test,y_val_pred)
+                    val_loss = self.cross_entropy_loss(y_test,A_pred)
+                    val_loss_history.append(val_loss)
+                    val_acc_history.append(val_acc)
+                    if(_%100 ==0):
+                            # print(y_pred.shape)
+                            # print(W.shape)
+                        print("\nTraining loss after ", m*(_ + 1), " sgd steps is : ", loss, " | validation loss is : ", val_loss)
+                        print("Training accuracy after ", m*(_ + 1), " sgd steps is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
+                else:
+                    if(_%100 ==0):
+                        print("\nTraining loss after ",m*(_ + 1), " sgd steps is : ", loss) 
+                        print("Training accuracy after ",m*(_ + 1), " sgd steps is : ", train_acc*100,"%" )
+
 
         self.loss_history = loss_history
         self.val_loss_history = val_loss_history
@@ -319,12 +397,8 @@ class MyLogisticRegression():
         W  = self.W
         b = self.b
         y_pred =  self.sigmoid(np.dot(X,W)  + b)
-        for i in range(y_pred.shape[0]):
-            if(y_pred[i,0] <0.5):
-                y_pred[i,0] = 0
-            else:
-                y_pred[i,0] = 1
-
+        y_pred[y_pred < 0.5] = 0
+        y_pred[y_pred >= 0.5] = 1
         return y_pred
 
     def sigmoid(self ,Z):
@@ -340,10 +414,16 @@ class MyLogisticRegression():
     def accuracy(self,y, y_hat):
         count = 0
         m = y.shape[0]
-        for i in range(m):
-            if(y[i,0] == y_hat[i,0]):
-                count = count + 1
-        return count/m
+        err = np.sum(abs(y - y_hat))/m
+        # for i in range(m):
+        #     if(y[i,0] == y_hat[i,0]):
+        #         count = count + 1
+        return 1-err
+    def sgd_loss(self, y_i, a_i):
+        loss = -(y_i*np.log(a_i) + (1-y_i)*np.log(1-a_i))
+        loss = np.squeeze(loss)
+        return loss
+
 
 
 
@@ -363,5 +443,3 @@ ypred = linear.predict(Xtest)
 print('Predicted Values:', ypred)
 
 print('True Values:', ytest)
-
-print(linear.rmse_train_history)
