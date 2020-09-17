@@ -56,13 +56,14 @@ class MyPreProcessor():
             df = pd.read_csv("LR_dataset/VideoGameDataset - Video_Games_Sales_as_at_22_Dec_2016.csv",  usecols=['Critic_Score','Global_Sales','User_Score'])
             mean_critic_score = df["Critic_Score"].mean()
             df["Critic_Score"] = df["Critic_Score"].fillna(mean_critic_score)
-            df['User_Score'].replace(to_replace = 'tbd', value = np.nan,inplace=True)
+            df['User_Score'].replace(to_replace = 'tbd', value = np.nan ,inplace=True)
             df["User_Score"] = pd.to_numeric(df["User_Score"], downcast="float")
             mean_user_score = df["User_Score"].mean()
             df["User_Score"] = df["User_Score"].fillna(mean_user_score)
-            train_columns = ["Global_Sales", "Critic_Score"]
+            df = df.sample(frac = 1)
+            train_columns = ["User_Score", "Critic_Score"]
             X = np.array(df[train_columns])
-            Y = np.array(df["User_Score"])
+            Y = np.array(df["Global_Sales"])
             y = Y.reshape((Y.shape[0],1))
             X = (X - X.mean())/X.std()
 
@@ -133,11 +134,12 @@ class MyLinearRegression():
 
             #backward propagation and calculation of gradients
             error = y-y_hat
+            epsilon = 10**-7
 
             if(loss == "rmse"):
                 #gradient for rmse loss
-                dW = (-1/m)*(np.sum(np.dot(X.T,error),axis = 1)/(np.sum(((1/m)*(error)**2)))**0.5)
-                db = (-1/m)*(np.sum(error)/(np.sum(((1/m)*(error)**2))**0.5))
+                dW = (-1/m)*(np.sum(np.dot(X.T,error),axis = 1)/(np.sum(((1/m)*(error + 10**-7)**2)))**0.5)
+                db = (-1/m)*(np.sum(error)/(np.sum(((1/m)*(error + 10**-7)**2))**0.5))
             else:
                 epsilon = 10**-7
                 dW = (-1/m)*(np.sum(np.dot(X.T,abs(error)/(error+ epsilon) ), axis = 1))
@@ -327,7 +329,8 @@ class MyLogisticRegression():
             val_loss_history = []
             train_acc_history = []
             val_acc_history = []
-            for _ in range(epochs+1):
+            iterations = 0
+            for _ in range(0,epochs+1):
 
                 for i in range(m):
                     #forward propagation
@@ -349,26 +352,27 @@ class MyLogisticRegression():
                     # print(dW.shape)
                     # print(db.shape)
 
-                y_train_pred = self.predict(X)
-                train_acc = self.accuracy(y,y_train_pred)
-                train_acc_history.append(train_acc)
-                loss_history.append(loss)
-                if(X_test is not None):
-                    A_pred = self.sigmoid(np.dot(X_test, W) + b)
-                    y_val_pred = self.predict(X_test)
-                    val_acc = self.accuracy(y_test,y_val_pred)
-                    val_loss = self.cross_entropy_loss(y_test,A_pred)
-                    val_loss_history.append(val_loss)
-                    val_acc_history.append(val_acc)
-                    if(_%100 ==0):
-                            # print(y_pred.shape)
-                            # print(W.shape)
-                        print("\nTraining loss after ", m*(_ + 1), " sgd steps is : ", loss, " | validation loss is : ", val_loss)
-                        print("Training accuracy after ", m*(_ + 1), " sgd steps is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
-                else:
-                    if(_%100 ==0):
-                        print("\nTraining loss after ",m*(_ + 1), " sgd steps is : ", loss) 
-                        print("Training accuracy after ",m*(_ + 1), " sgd steps is : ", train_acc*100,"%" )
+                    y_train_pred = self.predict(X)
+                    train_acc = self.accuracy(y,y_train_pred)
+                    train_acc_history.append(train_acc)
+                    loss_history.append(loss)
+                    if(X_test is not None):
+                        A_pred = self.sigmoid(np.dot(X_test, W) + b)
+                        y_val_pred = self.predict(X_test)
+                        val_acc = self.accuracy(y_test,y_val_pred)
+                        val_loss = self.cross_entropy_loss(y_test,A_pred) 
+                        val_loss_history.append(val_loss)
+                        val_acc_history.append(val_acc)
+                        if(iterations%2000 ==0):
+                                # print(y_pred.shape)
+                                # print(W.shape)
+                            print("\nTraining loss after ", iterations, " sgd steps is : ", loss, " | validation loss is : ", val_loss)
+                            print("Training accuracy after ", iterations, " sgd steps is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
+                    else:
+                        if(iterations%2000 ==0):
+                            print("\nTraining loss after ",iterations, " sgd steps is : ", loss) 
+                            print("Training accuracy after ",iterations, " sgd steps is : ", train_acc*100,"%" )
+                    iterations=iterations + 1
 
 
         self.loss_history = loss_history
@@ -421,7 +425,7 @@ class MyLogisticRegression():
         return 1-err
     def sgd_loss(self, y_i, a_i):
         loss = -(y_i*np.log(a_i) + (1-y_i)*np.log(1-a_i))
-        loss = np.squeeze(loss)
+        loss = np.squeeze(loss) 
         return loss
 
 
