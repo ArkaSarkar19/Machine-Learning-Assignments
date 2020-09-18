@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import random 
 
 class MyPreProcessor():
     """
@@ -319,6 +320,7 @@ class MyLogisticRegression():
         else:
 
             m,n = X.shape           #number of training examples, and features
+            print(X.shape, m , n)
             W = np.zeros((n,1))     #weights
             b = 0                   #bias
             self.W = W
@@ -329,50 +331,56 @@ class MyLogisticRegression():
             val_loss_history = []
             train_acc_history = []
             val_acc_history = []
-            iterations = 0
-            for _ in range(0,epochs+1):
+            # iterations = 0
+            for _ in range(epochs):
 
-                for i in range(m):
-                    #forward propagation
-                    x_i = X[i]
-                    y_i = y[i]
-                    z = np.dot(x_i,W)  + b
-                    a = self.sigmoid(z)
-                    loss = self.sgd_loss(y_i,a)
+                # for i in range(m):
+                #forward propagation
+                i = random.randint(0,m-1)
+                x_i = X[i,:]
+                x_i = x_i.reshape((1,n))
+                y_i = y[i,:]
+                z = np.dot(x_i,W)  + b
+                a = self.sigmoid(z)
 
-                    #backward propagation and calculation of gradients
-                    dW = x_i*(a-y_i)
-                    db = a-y_i
-                    dW = dW.reshape((n,1))
-                    W = W - learning_rate*dW
-                    b = b - learning_rate*db
+                #For plotting the loss cure 
+                A = self.sigmoid(np.dot(X,W) + b )
+                loss = self.cross_entropy_loss(y,A)
 
-                    self.W = W
-                    self.b = b
-                    # print(dW.shape)
-                    # print(db.shape)
 
-                    y_train_pred = self.predict(X)
-                    train_acc = self.accuracy(y,y_train_pred)
-                    train_acc_history.append(train_acc)
-                    loss_history.append(loss)
-                    if(X_test is not None):
-                        A_pred = self.sigmoid(np.dot(X_test, W) + b)
-                        y_val_pred = self.predict(X_test)
-                        val_acc = self.accuracy(y_test,y_val_pred)
-                        val_loss = self.cross_entropy_loss(y_test,A_pred) 
-                        val_loss_history.append(val_loss)
-                        val_acc_history.append(val_acc)
-                        if(iterations%2000 ==0):
-                                # print(y_pred.shape)
-                                # print(W.shape)
-                            print("\nTraining loss after ", iterations, " sgd steps is : ", loss, " | validation loss is : ", val_loss)
-                            print("Training accuracy after ", iterations, " sgd steps is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
-                    else:
-                        if(iterations%2000 ==0):
-                            print("\nTraining loss after ",iterations, " sgd steps is : ", loss) 
-                            print("Training accuracy after ",iterations, " sgd steps is : ", train_acc*100,"%" )
-                    iterations=iterations + 1
+                #backward propagation and calculation of gradients
+                dW = x_i*(a-y_i)
+                db = a-y_i
+                dW = dW.reshape((n,1))
+                # print(dW.shape)
+                # print(db.shape)
+
+                y_train_pred = self.predict(X)
+                train_acc = self.accuracy(y,y_train_pred)
+                train_acc_history.append(train_acc)
+                loss_history.append(loss)
+                if(X_test is not None):
+                    A_pred = self.sigmoid(np.dot(X_test, W) + b)
+                    y_val_pred = self.predict(X_test)
+                    val_acc = self.accuracy(y_test,y_val_pred)
+                    val_loss = self.cross_entropy_loss(y_test,A_pred) 
+                    val_loss_history.append(val_loss)
+                    val_acc_history.append(val_acc)
+                    if(_%500 ==0):
+
+                        print("\nTraining loss after ", _, " sgd steps is : ", loss, " | validation loss is : ", val_loss)
+                        print("Training accuracy after ", _, " sgd steps is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
+                else:
+                    if(_%500 ==0):
+                        print("\nTraining loss after ",_, " sgd steps is : ", loss) 
+                        print("Training accuracy after ",_, " sgd steps is : ", train_acc*100,"%" )
+
+                # iterations=iterations + 1
+                W = W - learning_rate*dW
+                b = b - learning_rate*db
+
+                self.W = W
+                self.b = b
 
 
         self.loss_history = loss_history
@@ -398,6 +406,7 @@ class MyLogisticRegression():
         """
 
         # return the numpy array y which contains the predicted values
+
         W  = self.W
         b = self.b
         y_pred =  self.sigmoid(np.dot(X,W)  + b)
@@ -406,27 +415,56 @@ class MyLogisticRegression():
         return y_pred
 
     def sigmoid(self ,Z):
+        """
+        Calculate sigmoid
+
+        Parameters 
+        ----------
+        Z : 2-dimensional numpy array of shape (n_samples, 1) .
+
+        Returns
+        -------
+        A : 2-dimensional numpy array of shape (n_samples, 1) which acts as activation .
+        """
         A = 1/(1+np.exp(-Z))
         return A
 
     def cross_entropy_loss(self, y, A):
+        """
+        Calculate Binary cross entropy loss. 
+
+        Parameters 
+        ----------
+        y : 2-dimensional numpy array of shape (n_samples, 1) which are the ground true labels .
+        A : 2-dimensional numpy array of shape (n_samples, 1) which acts as activation .
+        Returns
+        -------
+        loss : Binary cross entropy Loss  
+        """
+        epsilon = 10**-7
         m = y.shape[0]
-        loss = (-1/m)*(np.sum(y*np.log(A) + (1-y)*np.log(1-A))) 
+        loss = (-1/m)*(np.sum(y*np.log(A + epsilon) + (1-y)*np.log(1-A +  epsilon))) 
         loss = np.squeeze(loss)
         return loss
 
     def accuracy(self,y, y_hat):
+        """
+        Calculate accuracy . 
+
+        Parameters 
+        ----------
+        y : 2-dimensional numpy array of shape (n_samples, 1) which are the ground true labels .
+        y_hat : 2-dimensional numpy array of shape (n_samples, 1) which acts as the predicted labels .
+        Returns
+        -------
+        acc : accuracy  
+        """
+
         count = 0
         m = y.shape[0]
         err = np.sum(abs(y - y_hat))/m
-        # for i in range(m):
-        #     if(y[i,0] == y_hat[i,0]):
-        #         count = count + 1
-        return 1-err
-    def sgd_loss(self, y_i, a_i):
-        loss = -(y_i*np.log(a_i) + (1-y_i)*np.log(1-a_i))
-        loss = np.squeeze(loss) 
-        return loss
+        acc = 1 - err
+        return acc
 
 
 
