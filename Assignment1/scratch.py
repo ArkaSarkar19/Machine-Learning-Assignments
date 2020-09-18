@@ -40,7 +40,7 @@ class MyPreProcessor():
             df = pd.read_csv("LR_dataset/abalone/Dataset.data",sep="\s+", 
                  skiprows=1,  usecols=[0,1,2,3,4,5,6,7,8], 
                  names=['sex','length', 'diameter', 'height', 'whole_weight', 'shucked_weight', 'viscera_weight', 'shell_weight', 'rings' ])
-            df = df.sample(frac = 1)
+            # df = df.sample(frac = 1)
             train_columns = ['sex','length', 'diameter', 'height', 'whole_weight', 'shucked_weight', 'viscera_weight', 'shell_weight']
             test_columns = ['rings']
 
@@ -48,35 +48,45 @@ class MyPreProcessor():
             df['sex'].replace(to_replace = 'M', value = 1,inplace=True)
             df['sex'].replace(to_replace = 'F', value = 2,inplace=True)
             df['sex'].replace(to_replace = 'I', value = 3,inplace=True)
-            X = np.array(df[train_columns])
-            y = np.array(df[test_columns])
+            np_dataset = np.array(df)
+            np.random.seed(3)
+            np.random.shuffle(np_dataset)
+            X = np_dataset[:, : -1]
+            Y = np_dataset[:,-1]
+            y = Y.reshape((Y.shape[0],1))
             X = (X-X.mean())/X.std()
 
         elif dataset == 1:
             # Implement for the video game dataset
-            df = pd.read_csv("LR_dataset/VideoGameDataset - Video_Games_Sales_as_at_22_Dec_2016.csv",  usecols=['Critic_Score','Global_Sales','User_Score'])
+            df = pd.read_csv("LR_dataset/VideoGameDataset - Video_Games_Sales_as_at_22_Dec_2016.csv",  usecols=['Critic_Score','User_Score','Global_Sales'])
             mean_critic_score = df["Critic_Score"].mean()
             df["Critic_Score"] = df["Critic_Score"].fillna(mean_critic_score)
             df['User_Score'].replace(to_replace = 'tbd', value = np.nan ,inplace=True)
             df["User_Score"] = pd.to_numeric(df["User_Score"], downcast="float")
             mean_user_score = df["User_Score"].mean()
             df["User_Score"] = df["User_Score"].fillna(mean_user_score)
-            df = df.sample(frac = 1)
             train_columns = ["User_Score", "Critic_Score"]
-            X = np.array(df[train_columns])
-            Y = np.array(df["Global_Sales"])
+            np_dataset = np.array(df)
+            np.random.seed(3)
+            np.random.shuffle(np_dataset)
+            X = np_dataset[:,1 : ]
+            Y = np_dataset[:, 0]
             y = Y.reshape((Y.shape[0],1))
-            X = (X - X.mean())/X.std()
+            X = (X-X.mean())/X.std()
+
 
         elif dataset == 2:
             # Implement for the banknote authentication dataset
             df = pd.read_csv("LoR_dataset/data_banknote_authentication.txt",sep="," , names = ["col1", "col2", "col3", "col4" , "val"])
-            df = df.sample(frac = 1)
+            # df = df.sample(frac = 1)
             train_columns = ["col1", "col2", "col3", "col4"]
-            X = np.array(df[train_columns])
-            Y = np.array(df["val"])
-            X = (X - X.mean())/X.std()
+            np_dataset = np.array(df)
+            np.random.seed(3)
+            np.random.shuffle(np_dataset)
+            X = np_dataset[:, : -1]
+            Y = np_dataset[:,-1]
             y = Y.reshape((Y.shape[0],1))
+            X = (X-X.mean())/X.std()
 
 
         return X, y
@@ -109,6 +119,16 @@ class MyLinearRegression():
         X : 2-dimensional numpy array of shape (n_samples, n_features) which acts as training data.
 
         y : 1-dimensional numpy array of shape (n_samples,) which acts as training labels.
+
+        X_test : 2-dimensional numpy array of shape (n_samples, n_features) which acts as testing data, default  = None.
+
+        y_test : 1-dimensional numpy array of shape (n_samples,) which acts as testing labels, default = None.
+
+        epochs : number that specifeis Number of iterations to run gradient descent, default = 5000.
+
+        learning_rate : learning rate of the model, default = 0.005.
+
+        loss : String to specify the type of loss function to be trained for , fefault = "rmse", types = ["rmse", "mae"].
         
         Returns
         -------
@@ -139,18 +159,18 @@ class MyLinearRegression():
 
             if(loss == "rmse"):
                 #gradient for rmse loss
-                dW = (-1/m)*(np.sum(np.dot(X.T,error),axis = 1)/(np.sum(((1/m)*(error + 10**-7)**2)))**0.5)
-                db = (-1/m)*(np.sum(error)/(np.sum(((1/m)*(error + 10**-7)**2))**0.5))
+                dW = (-1/m)*(np.sum(np.dot(X.T,error),axis = 1)/(np.sum(((1/m)*(error )**2)))**0.5)
+                db = (-1/m)*(np.sum(error)/(np.sum(((1/m)*(error )**2))**0.5))
             else:
                 epsilon = 10**-7
-                dW = (-1/m)*(np.sum(np.dot(X.T,abs(error)/(error+ epsilon) ), axis = 1))
-                db = (-1/m)*(np.sum(abs(error)/(error+ epsilon)))
+                dW = (-1/m)*(np.sum(np.dot(X.T,abs(error)/(error) ), axis = 1))
+                db = (-1/m)*(np.sum(abs(error)/(error)))
 
             dW = dW.reshape((n,1))
 
             # print(dW.shape)
             # print(db.shape)
-
+            
 
             if(X_test is not None):
                 y_pred = self.predict(X_test)
@@ -250,6 +270,17 @@ class MyLogisticRegression():
         X : 2-dimensional numpy array of shape (n_samples, n_features) which acts as training data.
 
         y : 1-dimensional numpy array of shape (n_samples,) which acts as training labels.
+
+        X_test : 2-dimensional numpy array of shape (n_samples, n_features) which acts as testing data, default  = None.
+
+        y_test : 1-dimensional numpy array of shape (n_samples,) which acts as testing labels, default = None.
+
+        epochs : number that specifeis Number of iterations to run gradient descent, default = 5000.
+
+        learning_rate : learning rate of the model, default = 0.005.
+
+        grad_type : String quatity that specifies the type of gradient descent, fefault = "bgd", types = ["bgd", "sgd"].
+
         
         Returns
         -------
@@ -258,52 +289,54 @@ class MyLogisticRegression():
 
         if(grad_type == "bgd"):
             m,n = X.shape           #number of training examples, and features
-            W = np.zeros((n,1))     #weights
-            b = 0                   #bias
+            W = np.zeros((n,1))     #weights initialised to a numpy array of zeros, shape = (number of featues, 1)
+            b = 0                   #bias initialised to 0
             self.W = W
             self.b = b;
-            y = y.reshape((m,1))
+            y = y.reshape((m,1))    #reshaping y
 
-            loss_history = []
-            val_loss_history = []
-            train_acc_history = []
-            val_acc_history = []
+            loss_history = []       #training loss history
+            val_loss_history = []   #validation loss history 
+            train_acc_history = []  #train accuracy history
+            val_acc_history = []    #validation accuracy history
+
             for _ in range(epochs):
 
                 #forward propagation
                 Z = np.dot(X,W)  + b
-                A = self.sigmoid(Z)
-                y_train_pred = self.predict(X)
-                train_acc = self.accuracy(y,y_train_pred)
-                loss = self.cross_entropy_loss(y,A)
+                A = self.sigmoid(Z)     #Activation of all the training examples (n,1) shape
+
+                y_train_pred = self.predict(X)  #To get the actual predictions on the train set.
+                train_acc = self.accuracy(y,y_train_pred)   #Training accuracy 
+                loss = self.cross_entropy_loss(y,A) #training loss
+
                 loss_history.append(loss)
                 train_acc_history.append(train_acc)
 
                 #backward propagation and calculation of gradients
-                dW = np.dot(X.T,(A-y))/m
-                db = np.sum(A-y)/m
-                dW = dW.reshape((n,1))
-
-                # print(dW.shape)
-                # print(db.shape)
+                dW = np.dot(X.T,(A-y))/m    #gradient w.r.t W
+                db = np.sum(A-y)/m          #gradient w.r.t b
+                dW = dW.reshape((n,1))      
 
                 if(X_test is not None):
-                    A_pred = self.sigmoid(np.dot(X_test, W) + b)
-                    y_val_pred = self.predict(X_test)
-                    val_acc = self.accuracy(y_test,y_val_pred)
-                    val_loss = self.cross_entropy_loss(y_test,A_pred)
+                    A_pred = self.sigmoid(np.dot(X_test, W) + b) #Activations on the test set
+
+                    y_val_pred = self.predict(X_test)   #To get the actual predictions on the test set.
+                    val_acc = self.accuracy(y_test,y_val_pred) #testing accuracy 
+                    val_loss = self.cross_entropy_loss(y_test,A_pred) #testing loss
+
                     val_loss_history.append(val_loss)
                     val_acc_history.append(val_acc)
 
                     if(_%500 ==0):
-                        # print(y_pred.shape)
-                        # print(W.shape)
                         print("\nTraining loss after ", _, " iterations is : ", loss, " | validation loss is : ", val_loss)
                         print("Training accuracy after ", _, " iterations is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
                 else:
                     if(_%500 ==0):
                         print("\nTraining loss after ", _, " iterations is ", loss) 
                         print("Training accuracy after ", _, " iterations is : ", train_acc*100,"%" )
+
+                #updating parameters 
                 W = W - learning_rate*dW
                 b = b - learning_rate*db
 
@@ -317,53 +350,54 @@ class MyLogisticRegression():
             self.W = W
             self.b = b
 
-        else:
+        elif(grad_type == "sgd"):
 
-            m,n = X.shape           #number of training examples, and features
-            print(X.shape, m , n)
-            W = np.zeros((n,1))     #weights
-            b = 0                   #bias
+            m,n = X.shape           #number of training examples, and featuress
+            W = np.zeros((n,1))     #weights initialised to a numpy array of zeros, shape = (number of featues, 1)
+            b = 0                   #bias initialised to 0
+
             self.W = W
             self.b = b;
+
             y = y.reshape((m,1))
 
-            loss_history = []
-            val_loss_history = []
-            train_acc_history = []
-            val_acc_history = []
-            # iterations = 0
+            loss_history = []       #training loss history
+            val_loss_history = []   #validation loss history 
+            train_acc_history = []  #train accuracy history
+            val_acc_history = []    #validation accuracy history
+
             for _ in range(epochs):
 
-                # for i in range(m):
-                #forward propagation
                 i = random.randint(0,m-1)
-                x_i = X[i,:]
+
+                x_i = X[i,:]         #training example on the ith index
                 x_i = x_i.reshape((1,n))
                 y_i = y[i,:]
+
+                #forward propagation
                 z = np.dot(x_i,W)  + b
-                a = self.sigmoid(z)
+                a = self.sigmoid(z)  #activation 
 
                 #For plotting the loss cure 
-                A = self.sigmoid(np.dot(X,W) + b )
-                loss = self.cross_entropy_loss(y,A)
+                A = self.sigmoid(np.dot(X,W) + b )   #Activation of all the training examples (n,1) shape
+                loss = self.cross_entropy_loss(y,A)    #loss on the training set 
 
 
                 #backward propagation and calculation of gradients
-                dW = x_i*(a-y_i)
-                db = a-y_i
+                dW = x_i*(a-y_i)    #gradient w.r.t W
+                db = a-y_i          #gradient w.r.t b
                 dW = dW.reshape((n,1))
-                # print(dW.shape)
-                # print(db.shape)
 
                 y_train_pred = self.predict(X)
                 train_acc = self.accuracy(y,y_train_pred)
                 train_acc_history.append(train_acc)
                 loss_history.append(loss)
                 if(X_test is not None):
-                    A_pred = self.sigmoid(np.dot(X_test, W) + b)
-                    y_val_pred = self.predict(X_test)
-                    val_acc = self.accuracy(y_test,y_val_pred)
-                    val_loss = self.cross_entropy_loss(y_test,A_pred) 
+                    A_pred = self.sigmoid(np.dot(X_test, W) + b)  #Activations on the test set
+
+                    y_val_pred = self.predict(X_test)    #To get the actual predictions on the test set.
+                    val_acc = self.accuracy(y_test,y_val_pred)  #testing accuracy 
+                    val_loss = self.cross_entropy_loss(y_test,A_pred) #testing loss
                     val_loss_history.append(val_loss)
                     val_acc_history.append(val_acc)
                     if(_%500 ==0):
@@ -375,13 +409,13 @@ class MyLogisticRegression():
                         print("\nTraining loss after ",_, " sgd steps is : ", loss) 
                         print("Training accuracy after ",_, " sgd steps is : ", train_acc*100,"%" )
 
-                # iterations=iterations + 1
+                #updating the parameters 
                 W = W - learning_rate*dW
                 b = b - learning_rate*db
 
                 self.W = W
                 self.b = b
-
+        # else:
 
         self.loss_history = loss_history
         self.val_loss_history = val_loss_history
