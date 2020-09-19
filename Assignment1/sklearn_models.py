@@ -66,20 +66,16 @@ regr.fit(X_train, Y_train)
 y_pred = regr.predict(X_test)
 error = (np.sum((Y_test-y_pred)**2)/y_pred.shape[0])**0.5
 print(error)
-# # The coefficients
-# print('Coefficients: \n', regr.coef_)
-# # The mean squared error
-# print('Mean squared error: %.2f'
-#       % mean_squared_error(diabetes_y_test, diabetes_y_pred))
-# # The coefficient of determination: 1 is perfect prediction
-# print('Coefficient of determination: %.2f'
-#       % r2_score(diabetes_y_test, diabetes_y_pred))
 
-# # Plot outputs
-# plt.scatter(diabetes_X_test, diabetes_y_test,  color='black')
-# plt.plot(diabetes_X_test, diabetes_y_pred, color='blue', linewidth=3)
 
-# plt.xticks(())
-# plt.yticks(())
+from sklearn.linear_model import LogisticRegression
+from sklearn import metrics
 
-# plt.show()
+logistic_regression = LogisticRegression()
+logistic_regression.fit(X_train,y_train)
+y_pred = logistic_regression.predict(X_test)
+accuracy = metrics.accuracy_score(y_test, y_pred)
+print("Accuracy on the test set :",accuracy*100, " %")
+y_pred_train = logistic_regression.predict(X_train)
+accuracy = metrics.accuracy_score(y_pred_train, y_train)
+print("Accuracy Train:",accuracy*100, " %")

@@ -327,10 +327,17 @@ class MyLogisticRegression():
 
                     val_loss_history.append(val_loss)
                     val_acc_history.append(val_acc)
+                    if(epochs > 100000):
 
-                    if(_%500 ==0):
-                        print("\nTraining loss after ", _, " iterations is : ", loss, " | validation loss is : ", val_loss)
-                        print("Training accuracy after ", _, " iterations is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
+                        if(_%20000==0):
+
+                            print("\nTraining loss after ", _, " bgd steps is : ", loss, " | validation loss is : ", val_loss)
+                            print("Training accuracy after ", _, " bgd steps is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
+                    else:
+                        if(_%500 ==0):
+
+                            print("\nTraining loss after ", _, " bgd steps is : ", loss, " | validation loss is : ", val_loss)
+                            print("Training accuracy after ", _, " bgd steps is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
                 else:
                     if(_%500 ==0):
                         print("\nTraining loss after ", _, " iterations is ", loss) 
@@ -400,10 +407,17 @@ class MyLogisticRegression():
                     val_loss = self.cross_entropy_loss(y_test,A_pred) #testing loss
                     val_loss_history.append(val_loss)
                     val_acc_history.append(val_acc)
-                    if(_%500 ==0):
+                    if(epochs > 100000):
 
-                        print("\nTraining loss after ", _, " sgd steps is : ", loss, " | validation loss is : ", val_loss)
-                        print("Training accuracy after ", _, " sgd steps is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
+                        if(_%20000==0):
+
+                            print("\nTraining loss after ", _, " sgd steps is : ", loss, " | validation loss is : ", val_loss)
+                            print("Training accuracy after ", _, " sgd steps is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
+                    else:
+                        if(_%500==0):
+
+                            print("\nTraining loss after ", _, " sgd steps is : ", loss, " | validation loss is : ", val_loss)
+                            print("Training accuracy after ", _, " sgd steps is : ", train_acc*100, "%" ," | validation accuracy is : ", val_acc*100,"%" )
                 else:
                     if(_%500 ==0):
                         print("\nTraining loss after ",_, " sgd steps is : ", loss) 
