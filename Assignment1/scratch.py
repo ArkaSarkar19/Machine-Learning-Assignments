@@ -54,7 +54,7 @@ class MyPreProcessor():
             X = np_dataset[:, : -1]
             Y = np_dataset[:,-1]
             y = Y.reshape((Y.shape[0],1))
-            X = (X-X.mean())/X.std()
+            X = (X-X.mean(axis = 0))/X.std(axis = 0)
 
         elif dataset == 1:
             # Implement for the video game dataset
@@ -72,7 +72,7 @@ class MyPreProcessor():
             X = np_dataset[:,1 : ]
             Y = np_dataset[:, 0]
             y = Y.reshape((Y.shape[0],1))
-            X = (X-X.mean())/X.std()
+            X = (X-X.mean(axis = 0))/X.std(axis = 0)
 
 
         elif dataset == 2:
@@ -86,7 +86,7 @@ class MyPreProcessor():
             X = np_dataset[:, : -1]
             Y = np_dataset[:,-1]
             y = Y.reshape((Y.shape[0],1))
-            X = (X-X.mean())/X.std()
+            X = (X-X.mean(axis = 0))/X.std(axis = 0)
 
 
         return X, y
