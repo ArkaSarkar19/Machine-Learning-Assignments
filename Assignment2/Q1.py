@@ -37,6 +37,10 @@ def load_dataset():
 	Y = y.reshape(-1,1)
 	Y = np.squeeze(Y)
 	
+	np.random.seed(123)
+    index = np.random.permutation(X.shape[0])
+    np.take(X, index, axis = 0, out = X)
+    np.take(Y, index, axis = 0, out = Y)
 	return X,Y
 
 def run_logistic_regression(X_train, X_test, y_train, y_test, iter = 5000):
