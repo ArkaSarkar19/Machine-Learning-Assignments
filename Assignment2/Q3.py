@@ -10,37 +10,95 @@ from sklearn.model_selection import ParameterGrid
 import h5py
 
 
-def load_dataset():
-    hf = h5py.File('Dataset/part_A_train.h5', 'r')
-    X = np.array(hf['X'])
-    Y = np.array(hf['Y'])
-    print(X.shape,Y.shape)
+def load_dataset(dataset = 0):
 
-    """ To calculate the class frequencies """
+    """ Returns the shuffled dataset from the .h5 file and calculates the class frequences. 
 
-    print("The class frequencies are : ")
+    Parameters
+    ----------
+    dataset : Integer to denoted the type of dataset to be loaded, default = 0
 
-    for i in range(Y.shape[1]):
-        freq = np.sum(Y[:,i])
-        print("The frequency of class " + str(i) + " is " + str(freq) + " / " + str(Y.shape[0]) )
+    Returns
+    --------
+    X :  2-dimensional numpy array of shape (n_samples, n_features) which acts as data.
+    Y : 1-dimensional numpy array of shape (n_samples,) which acts as labels.
 
-    y = []
-    for i in range(Y.shape[0]):
-        for j in range(Y.shape[1]):
-            if(Y[i,j] == 1):
-                y.append(j)
-    y = np.array(y)
-    Y = y.reshape(-1,1)
-    Y = np.squeeze(Y)
+    """
+    ## Dataset A
+    if (dataset == 0):
+        hf = h5py.File('Dataset/part_A_train.h5', 'r') #read the dataset 
+        
+        X = np.array(hf['X']) # X data  
+        Y = np.array(hf['Y']) # class labels of the form [0,0,0,1,0,,..]
+        print(X.shape,Y.shape)
 
-    np.random.seed(123)
-    index = np.random.permutation(X.shape[0])
-    np.take(X, index, axis = 0, out = X)
-    np.take(Y, index, axis = 0, out = Y)
+        """ To calculate the class frequencies """
+
+        print("The class frequencies are : ")
+
+        for i in range(Y.shape[1]):
+            freq = np.sum(Y[:,i])
+            print("The frequency of class " + str(i) + " is " + str(freq) + " / " + str(Y.shape[0]) )
+
+        """ Converting the binary class labels into single valued blabels """
+        y = []
+        for i in range(Y.shape[0]):
+            for j in range(Y.shape[1]):
+                if(Y[i,j] == 1):
+                    y.append(j)
+        
+        y = np.array(y)
+        Y = y.reshape(-1,1)
+        Y = np.squeeze(Y)
+
+        """ Shuffling the dataset """
+        np.random.seed(123)
+        index = np.random.permutation(X.shape[0])
+        np.take(X, index, axis = 0, out = X)
+        np.take(Y, index, axis = 0, out = Y)
+
+    ## dataset B
+    elif(dataset == 1):
+
+        hf = h5py.File('Dataset/part_B_train.h5', 'r') #read the dataset 
+
+        X = np.array(hf['X']) # X data  
+        Y = np.array(hf['Y']) # class labels of the form [0,0,0,1,0,,..]
+        print(X.shape,Y.shape)
+
+        """ To calculate the class frequencies """
+
+        print("The class frequencies are : ")
+
+        for i in range(Y.shape[1]):
+            freq = np.sum(Y[:,i])
+            print("The frequency of class " + str(i) + " is " + str(freq) + " / " + str(Y.shape[0]) )
+
+        """ Converting the binary class labels into single valued blabels """
+        y = []
+        for i in range(Y.shape[0]):
+            for j in range(Y.shape[1]):
+                if(Y[i,j] == 1):
+                    y.append(j)
+
+        y = np.array(y)
+        Y = y.reshape(-1,1)
+        Y = np.squeeze(Y)
+
+        """ Shuffling the dataset """
+        np.random.seed(123)
+        index = np.random.permutation(X.shape[0])
+        np.take(X, index, axis = 0, out = X)
+        np.take(Y, index, axis = 0, out = Y)
+
     return X,Y
 
 
 class MyGridSearchCV():
+
+    """ Performs Grid search on the estimator and uses k fold cross validation to validate it.
+
+    """
 
     def __init__(self, estimator, parameters, test_score = "accuracy", cv = 5):
 
@@ -144,6 +202,15 @@ class MyGridSearchCV():
         
         return models[best_model][0], avg_val_score, best_val_score, best_train_score
 
+
+
+# class MyEvaluationMetric():
+
+#     def __init__(self):
+#         pass
+
+#     def accuracy_score(y_true, y_pred):
+        
 
 if __name__ == "__main__":
     X,Y = load_dataset()
