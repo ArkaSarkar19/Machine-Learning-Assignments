@@ -149,6 +149,9 @@ class MyGridSearchCV():
 
         print(type(best_estimator_).__name__, "(", best_estimator_.get_params(), ")")
 
+        self.best_estimator_ = best_estimator_
+
+
 
 
     def kFoldCrossValidation(self, X, y, model):
@@ -204,12 +207,20 @@ class MyGridSearchCV():
 
 
 
-# class MyEvaluationMetric():
+class MyEvaluationMetric():
 
-#     def __init__(self):
-#         pass
+    def __init__(self):
+        pass
 
-#     def accuracy_score(y_true, y_pred):
+    def accuracy_score(y_true, y_pred, class_ = "binary", average = "macro"):
+
+        if(class_ == "binary"):
+            m = y_true.shape[0]
+            err = abs(y_true - y_pred)
+            acc = err/m
+            return acc
+
+    
         
 
 if __name__ == "__main__":
