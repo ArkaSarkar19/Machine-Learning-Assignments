@@ -8,7 +8,8 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np
 from sklearn.model_selection import ParameterGrid
 import h5py
-
+import sklearn.metrics as met
+import matplotlib.pyplot as plt
 
 def load_dataset(dataset = 0):
 
@@ -212,28 +213,156 @@ class MyEvaluationMetric():
     def __init__(self):
         pass
 
-    def accuracy_score(y_true, y_pred, class_ = "binary", average = "macro"):
-
-        if(class_ == "binary"):
+    def accuracy_score(self,y_true, y_pred):
             m = y_true.shape[0]
-            err = abs(y_true - y_pred)
+            err = 0
+            for i in range(m):
+
+                if(y_true[i]!=y_pred[i]):
+                    err+=1
             acc = err/m
             return acc
 
-    
+    def confusion_matrix(self,y_true, y_pred):
+        y_true = np.squeeze(y_true)
+        y_pred = np.squeeze(y_pred)
+        n = len(set(y_true))
+        cm = np.zeros((n,n),dtype = 'int')
+        if(len(y_true)!=len(y_pred)):
+            raise "dimension of label arrays don't match"
+        for label in set(y_true):
+            for i in range(len(y_true)):
+                if(label == y_true[i]):
+                    if(y_pred[i] == label):
+                        cm[label,label]+=1
+                    if(y_pred[i]!=label):
+                        cm[label,y_pred[i]]+=1
+
+
+        return cm
+
+    def precision_score(self, y_true, y_pred, average = "micro"):
+        cm = self.confusion_matrix(y_true,y_pred)
+        n = cm.shape[0]
+        TP = []
+        FP = []
+        class_precisions = []
+        for i in range(n):
+            tp = cm[i,i]
+            fp = np.sum(cm[:,i]) - cm[i,i]
+            TP.append(tp)
+            FP.append(fp)
+            pres_score = tp/(tp + fp)
+            class_precisions.append(pres_score)
+
+        if (average == "micro"):
+            precision_score = np.sum(TP)/ (np.sum(TP) + np.sum(FP))
+        elif(average == "macro"):
+            precision_score = np.sum(class_precisions)/ (len(class_precisions))
+        else:
+            raise "Wrong average"
+        return precision_score
+
+    def recall_score(self, y_true, y_pred, average = "micro"):
+        cm = self.confusion_matrix(y_true,y_pred)
+        n = cm.shape[0]
+        TP = []
+        FN = []
+        class_recalls = []
+        for i in range(n):
+            tp = cm[i,i]
+            fn = np.sum(cm[i,:]) - cm[i,i]
+            TP.append(tp)
+            FN.append(fn)
+            rec_score = tp/(tp + fn)
+            class_recalls.append(rec_score)
+
+        if (average == "micro"):
+            recall_score = np.sum(TP)/ (np.sum(TP) + np.sum(FN))
+        elif(average == "macro"):
+            recall_score = np.sum(class_recalls)/ (len(class_recalls))
+        else:
+            raise "Wrong average"
+        return recall_score
+
+    def f1_score(self,y_true,y_pred,average = "micro"):
+
+        precision = self.precision_score( y_true, y_pred, average)
+        recall = self.recall_score( y_true, y_pred, average)
+
+        f1_score = 2*precision*recall/(precision + recall)
+
+        return f1_score
+
+    def plot_roc_curve(self,y_true,y_pred):
+        cm = self.confusion_matrix(y_true,y_pred)
+
+        n = cm.shape[0]
+        TP = []
+        FN = []
+        FP = []
+        TN = []
+        for i in range(n):
+            tp = cm[i,i]
+            fn = np.sum(cm[i,:]) - cm[i,i]
+            fp = np.sum(cm[:,i]) - cm[i,i]
+            tn = np.sum(cm) - np.sum(cm[i,:]) - np.sum(cm[:,i])
+            TP.append(tp)
+            FN.append(fn)
+            FP.append(fp)
+            TN.append(tn)
+
+        TP = np.array(TP)
+        FN = np.array(FN)
+        FP = np.array(FP)
+        TN = np.array(TN)
+        TPR = TP/(TP + FN)
+        FPR = FP/(FP + TN)
+
+        plt.figure()
+        plt.plot(TPR,FPR)
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positibe Rate")
+        plt.show()
+
+
+
         
 
 if __name__ == "__main__":
-    X,Y = load_dataset()
-    std_slc = StandardScaler()
+    # X,Y = load_dataset()
+    # std_slc = StandardScaler()
 
-    X = std_slc.fit_transform(X)
+    # X = std_slc.fit_transform(X)
 
-    dec_tree = tree.DecisionTreeClassifier()
+    # dec_tree = tree.DecisionTreeClassifier()
 
-    max_depth = list([i for i in range(1,30,1)])
+    # max_depth = list([i for i in range(1,30,1)])
 
-    parameters = dict( max_depth=max_depth)
+    # parameters = dict( max_depth=max_depth)
 
-    clf_GS = MyGridSearchCV(dec_tree, parameters)
-    clf_GS.fit(X, Y)
+    # clf_GS = MyGridSearchCV(dec_tree, parameters)
+    # clf_GS.fit(X, Y)
+    metrics = MyEvaluationMetric()
+    y_true = [2, 0, 2, 2, 0, 1, 1, 2, 2, 0, 1, 2,3,1,3,3,2,0,2,1,0,3,1,1,1,2,0,0]
+    y_pred = [0, 0, 2, 1, 0, 2, 1, 0, 2, 0, 2, 2,3,1,3,3,2,0,1,2,0,3,1,2,3,2,1,1]
+    # y_true = [1,1,1,1,1,0,0,0,1,1,0,1,0]
+    # y_pred = [1,1,0,1,0,0,0,1,1,1,0,1,1]
+    cm_1 = met.confusion_matrix(y_true, y_pred)
+    pres_score_micro = met.precision_score(y_true,y_pred,average = "micro")
+    pres_score_macro = met.precision_score(y_true,y_pred,average = "macro")
+    recall_score_micro = met.recall_score(y_true,y_pred,average = "micro")
+    recall_score_macro = met.recall_score(y_true,y_pred,average = "macro")
+    f1_score_micro = met.f1_score(y_true,y_pred,average = "micro")
+    f1_score_macro = met.f1_score(y_true,y_pred,average = "macro")
+    print(cm_1,pres_score_micro,pres_score_macro,recall_score_micro,recall_score_macro,f1_score_micro,f1_score_macro)
+    print("\n\n")
+    cm_2 = metrics.confusion_matrix(y_true  , y_pred)
+    pres_score_micro = metrics.precision_score(y_true,y_pred,average = "micro")
+    pres_score_macro = metrics.precision_score(y_true,y_pred,average = "macro")
+    recall_score_micro = metrics.recall_score(y_true,y_pred,average = "micro")
+    recall_score_macro = metrics.recall_score(y_true,y_pred,average = "macro")
+    f1_score_micro = metrics.f1_score(y_true,y_pred,average = "micro")
+    f1_score_macro = metrics.f1_score(y_true,y_pred,average = "macro")
+    print(cm_2,pres_score_micro,pres_score_macro,recall_score_micro,recall_score_macro,f1_score_micro,f1_score_macro)
+    metrics.plot_roc_curve(y_true,y_pred)
