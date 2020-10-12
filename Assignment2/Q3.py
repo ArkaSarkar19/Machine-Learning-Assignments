@@ -114,7 +114,7 @@ class MyGridSearchCV():
 
         best_estimator_ = None
         best_score = 0
-        best_avg = 0
+        best_val = 0
         best_param = -1
         parameterGrid = self.parameterGrid
 
@@ -129,18 +129,23 @@ class MyGridSearchCV():
             self.training_accuracy_history.append(curr_best_train_score)
             self.validation_accuracy_history.append(curr_best_val_score)
             print("Best validation score achieved : ", curr_best_val_score, " Average validation score achieved : ", curr_avg_score, "\n")
-            if(curr_best_val_score > best_score):
-                best_score = curr_best_val_score
-                best_estimator_ = dec_tree
-                best_avg = curr_avg_score
-                best_param = curr_param
-
-            elif(curr_best_val_score == best_score):
-                if(curr_avg_score > best_avg):
-                    best_score = curr_best_val_score
+            if(curr_avg_score > best_score):
+                    best_score = curr_avg_score
                     best_estimator_ = dec_tree
-                    best_avg = curr_avg_score
+                    best_val = curr_best_val_score
                     best_param = curr_param
+
+            elif(curr_avg_score == best_score):
+                if(curr_best_val_score > best_val):
+                    best_score = curr_avg_score
+                    best_estimator_ = dec_tree
+                    best_val = curr_best_val_score
+                    best_param = curr_param
+                # if(curr_avg_score > best_avg):
+                #     best_score = curr_best_val_score
+                #     best_estimator_ = dec_tree
+                #     best_avg = curr_avg_score
+                #     best_param = curr_param
 
 
         for i in range(len(best_param)):
@@ -294,36 +299,93 @@ class MyEvaluationMetric():
 
         return f1_score
 
-    def plot_roc_curve(self,y_true,y_pred):
-        cm = self.confusion_matrix(y_true,y_pred)
-
-        n = cm.shape[0]
+    def calculate_rates(self,y_true, predictions, threshold = 0.5, average = "micro"):
+        y_true = np.squeeze(y_true)
+        y_pred = np.squeeze(predictions)
+        n = len(set(y_true))
+        if(len(y_true)!=len(predictions)):
+            raise "dimension of label arrays don't match"
         TP = []
-        FN = []
         FP = []
         TN = []
-        for i in range(n):
-            tp = cm[i,i]
-            fn = np.sum(cm[i,:]) - cm[i,i]
-            fp = np.sum(cm[:,i]) - cm[i,i]
-            tn = np.sum(cm) - np.sum(cm[i,:]) - np.sum(cm[:,i])
+        FN = []
+        TPR = []
+        FPR = []
+
+        for label in set(y_true):
+            tp=0
+            fp=0
+            tn=0
+            fn=0
+            for i in range(len(y_true)):
+                if(label == y_true[i]):
+                    if(predictions[i] >=threshold):
+                        tp+=1
+                    else:
+                        fn+=1
+
+                else:
+                    if(predictions[i] >=threshold):
+                        fp+=1
+                    else:
+                        tn+=1
             TP.append(tp)
             FN.append(fn)
             FP.append(fp)
             TN.append(tn)
+            tpr = tp/(tp+fn)
+            fpr = fp/(fp+tn)
+            TPR.append(tpr)
+            FPR.append(FPR)
+
 
         TP = np.array(TP)
         FN = np.array(FN)
         FP = np.array(FP)
         TN = np.array(TN)
-        TPR = TP/(TP + FN)
-        FPR = FP/(FP + TN)
+        if (average == "micro"):
+            tpr_fin = np.sum(TP)/ (np.sum(TP) + np.sum(FN))
+            fpr_fin = np.sum(FP)/ (np.sum(FP) + np.sum(TN))
+        elif(average == "macro"):
+            tpr_fin = np.sum(TPR)/ len(TPR)
+            fpr_fin = np.sum(FPR)/ len(FPR)
+        else:
+            raise "Wrong average"
+        return tpr_fin,fpr_fin
 
-        plt.figure()
-        plt.plot(TPR,FPR)
-        plt.xlabel("False Positive Rate")
-        plt.ylabel("True Positibe Rate")
-        plt.show()
+
+    def plot_roc_curve(self,y_true,predictions, average = "macro"):
+        TPR = []
+        FPR = []
+        thresholds = []
+        n_classes = predictions.shape[1]
+
+        threshold = 0
+        inc = 1/100
+        while(threshold<=1):
+            TPR_i = []
+            FPR_i = []
+            for _ in range(n_classes):
+                predictions_i = np.squeeze(predictions[:,_])
+                tpr_fin,fpr_fin = self.calculate_rates(y_true,predictions_i,threshold,average)
+                TPR_i.append(tpr_fin)
+                FPR_i.append(fpr_fin)
+            thresholds.append(threshold)
+            TPR.append(TPR_i)
+            FPR.append(FPR_i)
+            threshold+=inc
+
+        TPR = np.array(TPR)
+        FPR = np.array(FPR)
+        print(TPR)
+        print(FPR)
+        for i in range(n_classes):
+            plt.plot(FPR[:,i],TPR[:,i]);
+            plt.plot(thresholds,thresholds,'--')
+            plt.xlabel("False Positive Rate (FPR)--->")
+            plt.ylabel("True Positive Rate (TPR)--->")
+            plt.title("ROC Curve")
+            plt.show()
 
 
 
@@ -343,26 +405,52 @@ if __name__ == "__main__":
 
     # clf_GS = MyGridSearchCV(dec_tree, parameters)
     # clf_GS.fit(X, Y)
-    metrics = MyEvaluationMetric()
-    y_true = [2, 0, 2, 2, 0, 1, 1, 2, 2, 0, 1, 2,3,1,3,3,2,0,2,1,0,3,1,1,1,2,0,0]
-    y_pred = [0, 0, 2, 1, 0, 2, 1, 0, 2, 0, 2, 2,3,1,3,3,2,0,1,2,0,3,1,2,3,2,1,1]
-    # y_true = [1,1,1,1,1,0,0,0,1,1,0,1,0]
-    # y_pred = [1,1,0,1,0,0,0,1,1,1,0,1,1]
-    cm_1 = met.confusion_matrix(y_true, y_pred)
-    pres_score_micro = met.precision_score(y_true,y_pred,average = "micro")
-    pres_score_macro = met.precision_score(y_true,y_pred,average = "macro")
-    recall_score_micro = met.recall_score(y_true,y_pred,average = "micro")
-    recall_score_macro = met.recall_score(y_true,y_pred,average = "macro")
-    f1_score_micro = met.f1_score(y_true,y_pred,average = "micro")
-    f1_score_macro = met.f1_score(y_true,y_pred,average = "macro")
-    print(cm_1,pres_score_micro,pres_score_macro,recall_score_micro,recall_score_macro,f1_score_micro,f1_score_macro)
-    print("\n\n")
-    cm_2 = metrics.confusion_matrix(y_true  , y_pred)
-    pres_score_micro = metrics.precision_score(y_true,y_pred,average = "micro")
-    pres_score_macro = metrics.precision_score(y_true,y_pred,average = "macro")
-    recall_score_micro = metrics.recall_score(y_true,y_pred,average = "micro")
-    recall_score_macro = metrics.recall_score(y_true,y_pred,average = "macro")
-    f1_score_micro = metrics.f1_score(y_true,y_pred,average = "micro")
-    f1_score_macro = metrics.f1_score(y_true,y_pred,average = "macro")
-    print(cm_2,pres_score_micro,pres_score_macro,recall_score_micro,recall_score_macro,f1_score_micro,f1_score_macro)
-    metrics.plot_roc_curve(y_true,y_pred)
+    # import matplotlib.pyplot as plt 
+    # plt.plot([x for x in range(1,30,1)], clf_GS.training_accuracy_history, label = "Training  accuracy " )
+    # plt.plot([x for x in range(1,30,1)], clf_GS.validation_accuracy_history, label = "Validation  accuracy")
+    # plt.xlabel('max_depth')
+    # plt.ylabel('accuracy')
+    # plt.legend()
+    # plt.show()
+
+
+
+
+
+
+    # metrics = MyEvaluationMetric()
+    # y_true = [2, 0, 2, 2, 0, 1, 1, 2, 2, 0, 1, 2,3,1,3,3,2,0,2,1,0,3,1,1,1,2,0,0]
+    # y_pred = [0, 0, 2, 1, 0, 2, 1, 0, 2, 0, 2, 2,3,1,3,3,2,0,1,2,0,3,1,2,3,2,1,1]
+    # # y_true = [1,1,1,1,1,0,0,0,1,1,0,1,0]
+    # # y_pred = [1,1,0,1,0,0,0,1,1,1,0,1,1]
+    # cm_1 = met.confusion_matrix(y_true, y_pred)
+    # pres_score_micro = met.precision_score(y_true,y_pred,average = "micro")
+    # pres_score_macro = met.precision_score(y_true,y_pred,average = "macro")
+    # recall_score_micro = met.recall_score(y_true,y_pred,average = "micro")
+    # recall_score_macro = met.recall_score(y_true,y_pred,average = "macro")
+    # f1_score_micro = met.f1_score(y_true,y_pred,average = "micro")
+    # f1_score_macro = met.f1_score(y_true,y_pred,average = "macro")
+    # print(cm_1,pres_score_micro,pres_score_macro,recall_score_micro,recall_score_macro,f1_score_micro,f1_score_macro)
+    # print("\n\n")
+    # cm_2 = metrics.confusion_matrix(y_true  , y_pred)
+    # pres_score_micro = metrics.precision_score(y_true,y_pred,average = "micro")
+    # pres_score_macro = metrics.precision_score(y_true,y_pred,average = "macro")
+    # recall_score_micro = metrics.recall_score(y_true,y_pred,average = "micro")
+    # recall_score_macro = metrics.recall_score(y_true,y_pred,average = "macro")
+    # f1_score_micro = metrics.f1_score(y_true,y_pred,average = "micro")
+    # f1_score_macro = metrics.f1_score(y_true,y_pred,average = "macro")
+    # print(cm_2,pres_score_micro,pres_score_macro,recall_score_micro,recall_score_macro,f1_score_micro,f1_score_macro)
+    # metrics.plot_roc_curve(y_true,y_pred)
+
+
+    X,y = load_dataset(0)
+    # std_slc = StandardScaler()
+    # X = std_slc.fit_transform(X)
+    dec_tree = tree.DecisionTreeClassifier(max_depth = 10)
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=0)
+    dec_tree.fit(X_train, y_train)
+    prob = dec_tree.predict_proba(X_test)
+    print(prob)
+    metric = MyEvaluationMetric()
+    metric.plot_roc_curve(y_test, prob)
