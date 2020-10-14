@@ -13,6 +13,7 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import accuracy_score
 from sklearn.decomposition import TruncatedSVD
+from tabulate import tabulate
 
 def load_dataset():
 	hf = h5py.File('Dataset/part_A_train.h5', 'r')
@@ -38,9 +39,9 @@ def load_dataset():
 	Y = np.squeeze(Y)
 	
 	np.random.seed(123)
-    index = np.random.permutation(X.shape[0])
-    np.take(X, index, axis = 0, out = X)
-    np.take(Y, index, axis = 0, out = Y)
+	index = np.random.permutation(X.shape[0])
+	np.take(X, index, axis = 0, out = X)
+	np.take(Y, index, axis = 0, out = Y)
 	return X,Y
 
 def run_logistic_regression(X_train, X_test, y_train, y_test, iter = 5000):
@@ -55,9 +56,13 @@ def run_logistic_regression(X_train, X_test, y_train, y_test, iter = 5000):
 	f1 = f1_score(y_test, y_pred, average='macro')
 
 
-	print("Accuracy :",acc_score)
-	print("Precision : ",pres_score)
-	print("F1 Score : ", f1)
+	# print("Accuracy :",acc_score)
+	# print("Precision : ",pres_score)
+	# print("F1 Score : ", f1)
+	l = [ [acc_score, pres_score, f1]]
+	table = tabulate(l, headers=["Accuracy score", "Precision Score", "f1 score"], tablefmt='orgtbl')
+	print("\n")
+	print(table)
 
 
 if __name__ ==  "__main__":

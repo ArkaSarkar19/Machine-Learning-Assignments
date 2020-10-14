@@ -1,9 +1,95 @@
-import numpy as np 
 import numpy as np
 import scipy as sp 
 import pandas as pd
 import h5py as h5py
 import math
+from sklearn.model_selection import train_test_split
+import sklearn.metrics as met
+from tabulate import tabulate
+from sklearn.naive_bayes import GaussianNB
+def load_dataset(dataset = 0):
+
+    """ Returns the shuffled dataset from the .h5 file and calculates the class frequences. 
+
+    Parameters
+    ----------
+    dataset : Integer to denoted the type of dataset to be loaded, default = 0
+
+    Returns
+    --------
+    X :  2-dimensional numpy array of shape (n_samples, n_features) which acts as data.
+    Y : 1-dimensional numpy array of shape (n_samples,) which acts as labels.
+
+    """
+    ## Dataset A
+    if (dataset == 0):
+        hf = h5py.File('Dataset/part_A_train.h5', 'r') #read the dataset 
+        
+        X = np.array(hf['X']) # X data  
+        Y = np.array(hf['Y']) # class labels of the form [0,0,0,1,0,,..]
+        print(X.shape,Y.shape)
+
+        """ To calculate the class frequencies """
+
+        print("The class frequencies are : ")
+
+        for i in range(Y.shape[1]):
+            freq = np.sum(Y[:,i])
+            print("The frequency of class " + str(i) + " is " + str(freq) + " / " + str(Y.shape[0]) )
+
+        """ Converting the binary class labels into single valued blabels """
+        y = []
+        for i in range(Y.shape[0]):
+            for j in range(Y.shape[1]):
+                if(Y[i,j] == 1):
+                    y.append(j)
+        
+        y = np.array(y)
+        Y = y.reshape(-1,1)
+        Y = np.squeeze(Y)
+
+        """ Shuffling the dataset """
+        np.random.seed(123)
+        index = np.random.permutation(X.shape[0])
+        np.take(X, index, axis = 0, out = X)
+        np.take(Y, index, axis = 0, out = Y)
+
+    ## dataset B
+    elif(dataset == 1):
+
+        hf = h5py.File('Dataset/part_B_train.h5', 'r') #read the dataset 
+
+        X = np.array(hf['X']) # X data  
+        Y = np.array(hf['Y']) # class labels of the form [0,0,0,1,0,,..]
+        print(X.shape,Y.shape)
+
+        """ To calculate the class frequencies """
+
+        print("The class frequencies are : ")
+
+        for i in range(Y.shape[1]):
+            freq = np.sum(Y[:,i])
+            print("The frequency of class " + str(i) + " is " + str(freq) + " / " + str(Y.shape[0]) )
+
+        """ Converting the binary class labels into single valued blabels """
+        y = []
+        for i in range(Y.shape[0]):
+            for j in range(Y.shape[1]):
+                if(Y[i,j] == 1):
+                    y.append(j)
+
+        y = np.array(y)
+        Y = y.reshape(-1,1)
+        Y = np.squeeze(Y)
+
+        """ Shuffling the dataset """
+        np.random.seed(123)
+        index = np.random.permutation(X.shape[0])
+        np.take(X, index, axis = 0, out = X)
+        np.take(Y, index, axis = 0, out = Y)
+
+    return X,Y
+
 
 class MyGaussianNaiveBayes():
     
@@ -53,9 +139,72 @@ class MyGaussianNaiveBayes():
                     p+=np.log(gauss)
 
                 probabilities.append(p)
-            if(k%10 == 0):
-                print("Total samples done : ", k)
             y_pred.append(np.argmax(probabilities))
         
         return y_pred
         
+
+if __name__ == "__main__":
+
+	print("--------------------Dataset A----------------------------------------------------")
+	X,y = load_dataset(0)
+	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+	print("Running MyGaussianNaiveBayes---------------")
+	nb = MyGaussianNaiveBayes()
+	nb.fit(X_train,y_train)
+	y_pred = nb.predict(X_test)
+	accuracy = met.accuracy_score(y_test,y_pred)
+	precision = met.precision_score(y_test,y_pred, average = "macro")
+	recall = met.recall_score(y_test,y_pred,average = "macro")
+	f1 = met.f1_score(y_test,y_pred, average = "macro")
+	l = [[ accuracy, precision, recall, f1]]
+	table = tabulate(l, headers=["Accuracy", "Precision ", " Recall", "f1"], tablefmt='orgtbl')
+	print("\n")
+	print(table)
+
+
+	print("Running SklearnGaussianNaiveBayes---------------")
+	gnb = GaussianNB()
+	y_pred = gnb.fit(X_train, y_train).predict(X_test)
+	accuracy = met.accuracy_score(y_test,y_pred)
+	precision = met.precision_score(y_test,y_pred, average = "macro")
+	recall = met.recall_score(y_test,y_pred,average = "macro")
+	f1 = met.f1_score(y_test,y_pred, average = "macro")
+	l = [[ accuracy, precision, recall, f1]]
+	table = tabulate(l, headers=["Accuracy", "Precision ", " Recall", "f1"], tablefmt='orgtbl')
+	print("\n")
+	print(table)
+
+	print("--------------------Dataset B----------------------------------------------------")
+
+
+	X,y = load_dataset(1)
+	X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+	print("Running MyGaussianNaiveBayes---------------")
+
+	nb = MyGaussianNaiveBayes()
+	nb.fit(X_train,y_train)
+	y_pred = nb.predict(X_test)
+
+	accuracy = met.accuracy_score(y_test,y_pred)
+	precision = met.precision_score(y_test,y_pred, average = "macro")
+	recall = met.recall_score(y_test,y_pred,average = "macro")
+	f1 = met.f1_score(y_test,y_pred, average = "macro")
+	l = [[ accuracy, precision, recall, f1]]
+	table = tabulate(l, headers=["Accuracy", "Precision ", " Recall", "f1"], tablefmt='orgtbl')
+	print("\n")
+	print(table)
+
+	print("Running SklearnGaussianNaiveBayes---------------")
+
+	gnb = GaussianNB()
+	y_pred = gnb.fit(X_train, y_train).predict(X_test)
+	accuracy = met.accuracy_score(y_test,y_pred)
+	precision = met.precision_score(y_test,y_pred, average = "macro")
+	recall = met.recall_score(y_test,y_pred,average = "macro")
+	f1 = met.f1_score(y_test,y_pred, average = "macro")
+	l = [[ accuracy, precision, recall, f1]]
+	table = tabulate(l, headers=["Accuracy", "Precision ", " Recall", "f1"], tablefmt='orgtbl')
+	print("\n")
+	print(table)
